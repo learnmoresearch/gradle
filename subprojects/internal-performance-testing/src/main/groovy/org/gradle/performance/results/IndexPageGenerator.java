@@ -56,7 +56,8 @@ public class IndexPageGenerator extends HtmlPageGenerator<ResultsStore> {
 
     private Set<ScenarioBuildResultData> readBuildResultData(File resultJson) {
         try {
-            List<ScenarioBuildResultData> list = new ObjectMapper().readValue(resultJson, new TypeReference<List<ScenarioBuildResultData>>() { });
+            List<ScenarioBuildResultData> list = new ObjectMapper().readValue(resultJson, new TypeReference<List<ScenarioBuildResultData>>() {
+            });
             return sortBuildResultData(list.stream().map(this::queryExecutionData));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -95,12 +96,16 @@ public class IndexPageGenerator extends HtmlPageGenerator<ResultsStore> {
     }
 
     private List<ScenarioBuildResultData.ExecutionData> determineRecentExecutions(List<ScenarioBuildResultData.ExecutionData> executions) {
-        List<ScenarioBuildResultData.ExecutionData> executionsOfSameCommit = executions.stream().filter(execution -> execution.getCommitId().equals(commitId)).collect(toList());
+        List<ScenarioBuildResultData.ExecutionData> executionsOfSameCommit = executions.stream().filter(this::sameCommit).collect(toList());
         if (executionsOfSameCommit.isEmpty()) {
             return executions;
         } else {
             return executionsOfSameCommit;
         }
+    }
+
+    private boolean sameCommit(ScenarioBuildResultData.ExecutionData execution) {
+        return !execution.getCommitId().isEmpty() && commitId.startsWith(execution.getCommitId());
     }
 
     private ScenarioBuildResultData.ExecutionData extractExecutionData(PerformanceTestExecution performanceTestExecution) {
@@ -130,6 +135,7 @@ public class IndexPageGenerator extends HtmlPageGenerator<ResultsStore> {
     public void render(final ResultsStore store, Writer writer) throws IOException {
         new MetricsHtml(writer) {
             AtomicInteger counter = new AtomicInteger(0);
+
             // @formatter:off
             {
                 html();
@@ -364,7 +370,7 @@ public class IndexPageGenerator extends HtmlPageGenerator<ResultsStore> {
             if (scenario.isFromCache()) {
                 result.add(FROM_CACHE);
             }
-            if(scenario.isUnknown()) {
+            if (scenario.isUnknown()) {
                 result.add(UNKNOWN);
             } else if (scenario.isBuildFailed()) {
                 result.add(FAILED);
