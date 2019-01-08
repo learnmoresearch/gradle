@@ -137,6 +137,7 @@ class JavaIDEModelPerformanceTest extends AbstractToolingApiCrossVersionPerforma
 
         then:
         results.assertCurrentVersionHasNotRegressed()
+        assert false
 
         where:
         testProject                   | iterations
