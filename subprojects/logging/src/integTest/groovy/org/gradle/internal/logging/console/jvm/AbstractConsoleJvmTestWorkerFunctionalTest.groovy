@@ -17,8 +17,8 @@
 package org.gradle.internal.logging.console.jvm
 
 import org.gradle.api.logging.configuration.ConsoleOutput
-import org.gradle.integtests.fixtures.RichConsoleStyling
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import org.gradle.integtests.fixtures.RichConsoleStyling
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
 import org.gradle.test.fixtures.ConcurrentTestUtil
 import org.gradle.test.fixtures.server.http.BlockingHttpServer
@@ -26,7 +26,9 @@ import org.junit.Rule
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
-import static org.gradle.internal.logging.console.jvm.TestedProjectFixture.*
+import static org.gradle.internal.logging.console.jvm.TestedProjectFixture.containsTestExecutionWorkInProgressLine
+import static org.gradle.internal.logging.console.jvm.TestedProjectFixture.testClass
+import static org.gradle.internal.logging.console.jvm.TestedProjectFixture.testableJavaProject
 
 @IgnoreIf({ GradleContextualExecuter.isParallel() })
 abstract class AbstractConsoleJvmTestWorkerFunctionalTest extends AbstractIntegrationSpec implements RichConsoleStyling {
@@ -49,8 +51,8 @@ abstract class AbstractConsoleJvmTestWorkerFunctionalTest extends AbstractIntegr
         given:
         buildFile << testableJavaProject(testDependency(), MAX_WORKERS)
         buildFile << testFrameworkConfiguration()
-        file("src/test/java/${testClass1.fileRepresentation}") << testClass(testAnnotationClass(), testClass1.classNameWithoutPackage, SERVER_RESOURCE_1, server)
-        file("src/test/java/${testClass2.fileRepresentation}") << testClass(testAnnotationClass(), testClass2.classNameWithoutPackage, SERVER_RESOURCE_2, server)
+        file("src/test/java/${testClass1}.java") << testClass(testAnnotationClass(), testClass1, SERVER_RESOURCE_1, server)
+        file("src/test/java/${testClass2}.java") << testClass(testAnnotationClass(), testClass2, SERVER_RESOURCE_2, server)
         def testExecution = server.expectConcurrentAndBlock(2, SERVER_RESOURCE_1, SERVER_RESOURCE_2)
 
         when:
@@ -59,17 +61,17 @@ abstract class AbstractConsoleJvmTestWorkerFunctionalTest extends AbstractIntegr
 
         then:
         ConcurrentTestUtil.poll {
-            assert containsTestExecutionWorkInProgressLine(gradleHandle, ':test', testClass1.renderedClassName)
-            assert containsTestExecutionWorkInProgressLine(gradleHandle, ':test', testClass2.renderedClassName)
+            containsTestExecutionWorkInProgressLine(gradleHandle, ':test', testClass1Rendered)
+            containsTestExecutionWorkInProgressLine(gradleHandle, ':test', testClass2Rendered)
         }
 
         testExecution.release(2)
         gradleHandle.waitForFinish()
 
         where:
-        testClass1                    | testClass2                    | description
-        JavaTestClass.PRESERVED_TEST1 | JavaTestClass.PRESERVED_TEST2 | 'preserved'
-        JavaTestClass.SHORTENED_TEST1 | JavaTestClass.SHORTENED_TEST2 | 'shortened'
+        testClass1                    | testClass1Rendered            | testClass2 | testClass2Rendered | description
+        'Test1'                       | 'org.gradle.Test1'            | 'Test2'    | 'org.gradle.Test2' | 'preserved'
+        'AdvancedJavaPackageAbbreviatingClassFunctionalTest' | 'org...AdvancedJavaPackageAbbreviatingClassFunctionalTe' | 'EvenMoreAdvancedJavaPackageAbbreviatingJavaClassFunctionalTest' | '...EvenMoreAdvancedJavaPackageAbbreviatingJavaClassFun' | 'shortened'
     }
 
     @Unroll
@@ -82,8 +84,8 @@ abstract class AbstractConsoleJvmTestWorkerFunctionalTest extends AbstractIntegr
                 ${testFrameworkConfiguration()}
             }
         """
-        file("project1/src/test/java/${testClass1.fileRepresentation}") << testClass(testAnnotationClass(), testClass1.classNameWithoutPackage, SERVER_RESOURCE_1, server)
-        file("project2/src/test/java/${testClass2.fileRepresentation}") << testClass(testAnnotationClass(), testClass2.classNameWithoutPackage, SERVER_RESOURCE_2, server)
+        file("project1/src/test/java/${testClass1}.java") << testClass(testAnnotationClass(), testClass1, SERVER_RESOURCE_1, server)
+        file("project2/src/test/java/${testClass2}.java") << testClass(testAnnotationClass(), testClass2, SERVER_RESOURCE_2, server)
         def testExecution = server.expectConcurrentAndBlock(2, SERVER_RESOURCE_1, SERVER_RESOURCE_2)
 
         when:
@@ -92,20 +94,22 @@ abstract class AbstractConsoleJvmTestWorkerFunctionalTest extends AbstractIntegr
 
         then:
         ConcurrentTestUtil.poll {
-            assert containsTestExecutionWorkInProgressLine(gradleHandle, ':project1:test', testClass1.renderedClassName)
-            assert containsTestExecutionWorkInProgressLine(gradleHandle, ':project2:test', testClass2.renderedClassName)
+            containsTestExecutionWorkInProgressLine(gradleHandle, ':project1:test', testClass1Rendered)
+            containsTestExecutionWorkInProgressLine(gradleHandle, ':project2:test', testClass2Rendered)
         }
 
         testExecution.release(2)
         gradleHandle.waitForFinish()
 
         where:
-        testClass1                    | testClass2                    | description
-        JavaTestClass.PRESERVED_TEST1 | JavaTestClass.PRESERVED_TEST2 | 'preserved'
-        JavaTestClass.SHORTENED_TEST1 | JavaTestClass.SHORTENED_TEST2 | 'shortened'
+        testClass1                    | testClass1Rendered            | testClass2 | testClass2Rendered | description
+        'Test1'                       | 'org.gradle.Test1'            | 'Test2'    | 'org.gradle.Test2' | 'preserved'
+        'AdvancedJavaPackageAbbreviatingClassFunctionalTest' | 'org...AdvancedJavaPackageAbbreviatingClassFun' | 'EvenMoreAdvancedJavaPackageAbbreviatingJavaClassFunctionalTest' | '...EvenMoreAdvancedJavaPackageAbbreviatingJav' | 'shortened'
     }
 
     abstract String testAnnotationClass()
+
     abstract String testDependency()
+
     abstract String testFrameworkConfiguration()
 }

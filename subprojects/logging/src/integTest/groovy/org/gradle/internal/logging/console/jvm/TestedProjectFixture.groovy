@@ -62,34 +62,7 @@ class TestedProjectFixture implements RichConsoleStyling {
         """
     }
 
-    static boolean containsTestExecutionWorkInProgressLine(GradleHandle gradleHandle, String taskPath, String testName) {
-        gradleHandle.standardOutput.contains(workInProgressLine("> $taskPath > Executing test $testName"))
-    }
-
-    static class JavaTestClass {
-        public static final PRESERVED_TEST1 = new JavaTestClass('org.gradle.Test1', 'org.gradle.Test1')
-        public static final PRESERVED_TEST2 = new JavaTestClass('org.gradle.Test2', 'org.gradle.Test2')
-        public static final SHORTENED_TEST1 = new JavaTestClass('org.gradle.AdvancedJavaPackageAbbreviatingClassFunctionalTest', 'org...AdvancedJavaPackageAbbreviatingClassFunctionalTest')
-        public static final SHORTENED_TEST2 = new JavaTestClass('org.gradle.EvenMoreAdvancedJavaPackageAbbreviatingJavaClassFunctionalTest', '...EvenMoreAdvancedJavaPackageAbbreviatingJavaClassFunctionalTest')
-
-        private final String fullyQualifiedClassName
-        private final String renderedClassName
-
-        JavaTestClass(String fullyQualifiedClassName, String renderedClassName) {
-            this.fullyQualifiedClassName = fullyQualifiedClassName
-            this.renderedClassName = renderedClassName
-        }
-
-        String getFileRepresentation() {
-            fullyQualifiedClassName.replace('.', '/') + '.java'
-        }
-
-        String getClassNameWithoutPackage() {
-            fullyQualifiedClassName.substring(fullyQualifiedClassName.lastIndexOf('.') + 1, fullyQualifiedClassName.length())
-        }
-
-        String getRenderedClassName() {
-            renderedClassName
-        }
+    static void containsTestExecutionWorkInProgressLine(GradleHandle gradleHandle, String taskPath, String testName) {
+        assert gradleHandle.standardOutput.contains(workInProgressLine("> $taskPath > Executing test $testName"))
     }
 }
